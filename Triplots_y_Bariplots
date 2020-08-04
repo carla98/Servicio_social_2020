@@ -1,0 +1,667 @@
+#LIBRERIAS PARA HACER TRIPLOTS, BARYPLOTS & TERNARY PLOTS
+
+#Probe 7:
+# 1) Triplot: no se si esta no sea la funcion pero no puedo hacer los triangulos, solo graficas x y y 
+# 2) klaR y adea4 --> triangle.plot(): hacer graficas triangulares 
+# 3) geometry --> cart2bary(): cambia coords. cartesianas a bayesianas
+# 4) Ternary --> TernaryPlot(): este si tiene vignettes para seguir, buenas graficas
+# 5) ggtern --> ggtern(): graficas parecidas a las del paper
+# 6) Plotly: no pude visualizar las graficas
+# 7) vcd --> ternaryplot(): if you just need a quick dirty ternary plot. Esta muy padre y facil de usar
+#pero las funciones de "dimnames" no funcionan aunque no marcan error :v
+
+########################################################################################################
+#### 1) Triplot
+library(triplot)
+
+#Function to produce triangular (barycentric) plots illustrating proportions of 3 components
+#e.g. discrete 3D-distributions or mixture fractions that sum up to 1.
+
+#LearnBayes: https://rdrr.io/cran/LearnBayes/src/R/triplot.R
+#Esta es la funcion
+triplot=function(prior,data,where="topright")
+{
+  a=prior[1]; b=prior[2]
+  s=data[1]; f=data[2]
+  
+  p = seq(0.005, 0.995, length = 500)
+  prior=dbeta(p,a,b)
+  like=dbeta(p,s+1,f+1)
+  post=dbeta(p,a+s, b+f)
+  
+  m=max(c(prior,like,post))
+  
+  plot(p,post,type="l", ylab="Density", lty=2, lwd=3,
+       main=paste("Bayes Triplot, beta(",a,",",b,") prior, s=",s,", f=",f),
+       ylim=c(0,m),col="red")
+  lines(p,like,lty=1, lwd=3,col="blue")
+  lines(p,prior,lty=3, lwd=3,col="green")
+  legend(where,c("Prior","Likelihood","Posterior"),
+         lty=c(3,1,2), lwd=c(3,3,3), col=c("green","blue","red"))
+  
+}
+
+#Y asi se usa
+
+#For a proportion problem with a beta prior, plots the prior, likelihood and posterior on one graph.
+prior=c(3,10)  # proportion has a beta(3, 10) prior
+data=c(10,6)   # observe 10 successes and 6 failures
+
+triplot(prior,data) #pero es una grafica lineal x y y
+
+########################################################################################################
+########################################################################################################
+#### 2) klaR --> adea4 --> triangle.plot
+
+library(klaR)
+library(ade4)
+
+#Example: https://www.rdocumentation.org/packages/ade4/versions/1.7-15/topics/triangle.plot
+
+data(euro123)
+tot <- rbind.data.frame(euro123$in78, euro123$in86, euro123$in97)
+tot #data.frame de 3 columnas
+row.names(tot) <- paste(row.names(euro123$in78), rep(c(1, 2, 3), rep(12, 3)), sep = "")
+
+triangle.plot(tot, label = row.names(tot), clab = 1) #Esta es la funcion que me interesa
+
+par(mfrow = c(2, 2)) #ver 2 graficas
+
+#######Distintos tipos de triangle.plots:
+#cpoint --> a character size for plotting the points
+triangle.plot(euro123$in78, clab = 0, cpoint = 2, addmean = TRUE, show = FALSE)
+#usar los rownames como labels
+triangle.plot(euro123$in86, label = row.names(euro123$in78), clab = 0.8)
+#hacer un biplot
+triangle.biplot(euro123$in78, euro123$in86)
+#unir bases de datos para hacer el plot
+triangle.plot(rbind.data.frame(euro123$in78, euro123$in86), clab = 1, 
+              addaxes = TRUE, sub = "Principal axis", csub = 2, possub = "topright")
+
+#addaxes --> a logical value indicating whether the principal axes should be drawn, min y max son vectores
+triangle.plot(euro123[[1]], min3 = c(0, 0.2, 0.3), max3 = c(0.5, 0.7, 0.8),
+              clab = 1, label = row.names(euro123[[1]]), addax = TRUE)
+triangle.plot(euro123[[2]], min3 = c(0, 0.2, 0.3), max3 = c(0.5, 0.7, 0.8), 
+              clab = 1, label = row.names(euro123[[1]]), addax = TRUE)
+triangle.plot(euro123[[3]], min3 = c(0, 0.2, 0.3), max3 = c(0.5, 0.7, 0.8), 
+              clab = 1, label = row.names(euro123[[1]]), addax = TRUE)
+#unir bases de datos para hacer el plot
+triangle.plot(rbind.data.frame(euro123[[1]], euro123[[2]], euro123[[3]]))
+
+#Añadir caracteristicas a la grafica
+par(mfrow = c(1, 1)) #ver 1 grafica
+
+wtriangleplot <- cbind.data.frame(a = runif(100), b = runif(100), c = runif(100, 4, 5)) #unir bases de datos
+wtriangleplot <- triangle.plot(wtriangleplot) #hacer el triangle.plot
+points(wtriangleplot, col = "blue", cex = 2) #puntos azules
+wtriangleplot <- colMeans(wtriangleplot) #promedio de los puntos, son coordenadas x y y
+points(wtriangleplot[1], wtriangleplot[2], pch = 20, cex = 3, col = "red") #promedio en rojo
+rm(wtriangleplot) #quitar objeto
+
+########################################################################################################
+########################################################################################################
+#### 3) geometry --> cart2bary
+#funcion que cambia coordenadas cartesianas a baricentricas
+library(geometry)
+
+#Example
+## Define simplex in 2D (i.e. a triangle) 
+X <- rbind(c(0, 0), c(0, 1), c(1, 0))
+## Cartesian cooridinates of points 
+P <- rbind(c(0.5, 0.5), c(0.1, 0.8))
+## Plot triangle and points 
+trimesh(rbind(1:3), X)
+text(X[,1], X[,2], 1:3)
+# Label vertices 
+points(P)
+cart2bary(X, P)
+
+########################################################################################################
+########################################################################################################
+#### 4) Ternary
+#https://cran.r-project.org/web/packages/Ternary/vignettes/Ternary.html
+
+library(Ternary)
+TernaryPlot() #se parecen a las del paper
+
+#Grafica 1: The following charts show which corners are which, under different orientations:
+par(mfrow=c(1, 1))
+
+for (dir in c('up', 'right', 'down', 'le')) {
+  TernaryPlot(point=dir, atip='A', btip='B', ctip='C',
+              alab='Aness', blab='Bness', clab='Cness')
+  TernaryText(list(A=c(10, 1, 1), B=c(1, 10, 1), C=c(1, 1, 10)),
+              col=cbPalette8[4], font=2)
+} #grafica sencilla
+
+#Grafica 2: Plot two stylised plots side by side, and plot data
+TernaryPlot(alab="Redder \u2192", blab="\u2190 Greener", clab="Bluer \u2192",
+            lab.col=c('red', 'darkgreen', 'blue'),
+            point='right', lab.cex=0.8, grid.minor.lines=0,
+            grid.lty='solid', col=rgb(0.9, 0.9, 0.9), grid.col='white', 
+            axis.col=rgb(0.6, 0.6, 0.6), ticks.col=rgb(0.6, 0.6, 0.6),
+            padding=0.08)
+# Colour the background:
+cols <- TernaryPointValues(rgb)
+ColourTernary(cols, spectrum = NULL)
+
+# Add data points a la grafica 2
+data_points <- list(
+  R = c(255, 0, 0), 
+  O = c(240, 180, 52),
+  Y = c(210, 222, 102),
+  G = c(111, 222, 16),
+  B = c(25, 160, 243),
+  I = c(92, 12, 243),
+  V = c(225, 24, 208)
+)
+AddToTernary(points, data_points, pch=21, cex=2.8, 
+             bg=vapply(data_points, 
+                       function (x) rgb(x[1], x[2], x[3], 128, maxColorValue=255),
+                       character(1))
+)
+AddToTernary(text, data_points, names(data_points), cex=0.8, font=2)
+legend('bottomright', 
+       legend=c('Red', 'Orange', 'Yellow', 'Green'),
+       cex=0.8, bty='n', pch=21, pt.cex=1.8,
+       pt.bg=c(rgb(255,   0,   0, 128, NULL, 255), 
+               rgb(240, 180,  52, 128, NULL, 255),
+               rgb(210, 222, 102, 128, NULL, 255),
+               rgb(111, 222,  16, 128, NULL, 255))
+) #primero designas los puntos y luego los graficas
+
+
+##################################################################
+# Grafica 3
+
+TernaryPlot('Steam', 'Ice', 'Water', 
+            grid.lines=5, grid.lty='dotted',
+            grid.minor.lines=1, grid.minor.lty='dotted',
+            point='West')
+HorizontalGrid()
+middle_triangle <- matrix(c(
+  30, 40, 30,
+  30, 30, 40,
+  55, 20, 25
+), ncol=3, byrow=TRUE)
+#Añadir caracteristicas a la grafica
+TernaryPolygon(middle_triangle, col='#aaddfa', border='grey') #poligono triangular
+TernaryLines(list(c(0, 100, 0), middle_triangle[1, ]), col='grey') #linea a vertice 1
+TernaryLines(list(c(0, 0, 100), middle_triangle[2, ]), col='grey') #linea a vertice 2
+TernaryLines(list(c(100, 0, 0), middle_triangle[3, ]), col='grey') #linea a vertice 3
+TernaryArrows(c(20, 20, 60), c(30, 30, 40), length=0.2, col='darkblue') #flecha
+
+########################################################################
+#It is also possible to use cartesian coordinates to plot onto the graph.
+#By default, the plotting area is a 1x1 square.
+
+par(mar = rep(0, 4)) # Reduce margins
+TernaryPlot(point='right', clockwise = FALSE)
+cat("X range in this orientation:", TernaryXRange()) #concatenate and print
+
+## X range in this orientation: -0.0669873 0.9330127
+cat("Y range in this orientation:", TernaryYRange())
+
+## Y range in this orientation: -0.5 0.5
+arrows(x0=0.5, y0=0.4, x1=sqrt(3)/2, y1=0.4, length=0.1, col=cbPalette8[2]) #flecha naranja
+text(x=mean(c(0.5, sqrt(3)/2)), y=0.4, "Increasing X", pos=3, col=cbPalette8[2]) #texto
+text(x=0.5, y=0, "(0.5, 0)", col=cbPalette8[3]) #coordenada azul arriba
+text(x=0.8, y=-0.5, "(0.8, -0.5)", col=cbPalette8[3]) #coordenada azul abajo
+#Note the anticlockwise axis labelling on this plot, obtained using clockwise = FALSE.
+
+#########################################################################
+#COUNTOURS
+#A plot can be coloured and contoured according to the output of a mathematical expression:
+
+par(mar=rep(0.2, 4))
+TernaryPlot(alab = 'a', blab = 'b', clab = 'c') #Grafica 4
+
+FunctionToContour <- function (a, b, c) {
+  a - c + (4 * a * b) + (27 * a * b * c)
+}
+
+values <- TernaryPointValues(FunctionToContour, resolution=24L)
+ColourTernary(values) #no sirve
+TernaryContour(FunctionToContour, resolution=36L) #Grafica 4 ondas
+
+
+#or by according to the density of points across the plot:
+par(mar = rep(0.2, 4))
+TernaryPlot(axis.labels = seq(0, 10, by = 1)) #Grafica 5
+
+nPoints <- 4000L
+coordinates <- cbind(abs(rnorm(nPoints, 2, 3)),
+                     abs(rnorm(nPoints, 1, 1.5)),
+                     abs(rnorm(nPoints, 1, 0.5)))
+
+ColourTernary(TernaryDensity(coordinates, resolution = 10L))
+TernaryPoints(coordinates, col = 'red', pch = '.')
+TernaryDensityContour(coordinates, resolution = 30L) #Grafica 5 puntos rojos
+
+#########################################################################
+#MAGNIFICATION
+#Perhaps the action on a plot is constrained to a small region of ternary space. It's possible to 
+#"zoom in" - i.e. magnify and crop the ternary plot to the region of interest.
+
+#To do this you can specify the x and y limits of the region of interest.
+
+#TernaryCoords might be useful in establishing the cartesian coordinates of a particular point in 
+#ternary space.
+#Ensure that dx = dy if you want an isometric plot.
+
+my_corners <- list(c(22, 66, 12), c(22, 72, 6), c(15, 80, 5), c(12, 76, 12))
+lapply(my_corners, TernaryCoords, direction=1)
+
+#The padding parameter is added as a margin to each side of the region specified using xlim and ylim:
+
+TernaryPlot(xlim=c(0.28, 0.38), ylim=c(0.1, 0.2), padding=0.04) #zoom plot
+
+# Annotate grid lines at user-specified points:
+TernaryText(list(c(8, 72, 20), c(8, 82, 10)), c(20, 10), srt=-60, cex=0.9, col='darkgrey')
+TernaryText(list(c(10, 69, 21), c(20, 64, 16)), c(10, 20), srt=0, cex=0.9, col='darkgrey')
+
+# Plot desired polygon
+TernaryPolygon(my_corners, col='#2cbe4e') #poligono verde
+
+# Show xlim, ylim and padding, using cartesian coordinates
+lines(c(0.28, 0.28, 0.38, 0.38, 0.28), c(0.1, 0.2, 0.2, 0.1, 0.1)) #cuadrado
+text(0.28, 0.15, "xlim[1]", pos=2, srt=90) #xlim1
+text(0.38, 0.15, "xlim[2]", pos=4, srt=90) #xlim2
+text(0.33, 0.1, "ylim[1]", pos=1) #ylim1
+text(0.33, 0.2, "ylim[2]", pos=3) #ylim2
+text(0.38, 0.1, '<padding>', pos=4, cex=0.75) #padding x
+text(0.38, 0.1, '<padding> ', pos=2, cex=0.75, srt=90) #padding y
+
+########################################################################################################
+########################################################################################################
+### 5) ggtern
+#http://www.ggtern.com/usage-basic/
+
+library(ggtern)
+
+#If you are familiar with ggplot2, then this package should be a breeze, the first thing to note is 
+#that the ggplot() constructor has been replaced by ggtern() in order to produce a ternary diagram.
+
+plot <- ggtern()
+plot #se parecen a las del paper
+
+#The above is more-or-less a convenience wrapper for the following:
+plot <- ggplot() + coord_tern() #Alternate
+
+#Layers are required to have x, y and z values in order for the ternary coordinate transformation to 
+#function as expected.
+plot <- plot + geom_point(data=data.frame(x=1,y=0,z=0),aes(x,y,z))
+plot
+
+#Early in the development of this package, a decision was made to handle the transformation via a new
+#coordinate system, coord_tern(), as opposed to creating new proto geometries on a case-by-case basis, 
+#this means that one can still use geom_point(), geom_path(), geom_polygon() and others
+
+#Most geometries can be used as-is
+plot <- ggtern(data=data.frame(x=c(.7,.1,.3),
+                               y=c(.1,.8,.2),
+                               z=c(.2,.1,.5)),
+               aes(x=x,y=y,z=z)) +
+  geom_polygon(alpha=0.5,color="red",size=2) +
+  geom_path(color="blue",linetype=2,size=1) +
+  geom_point(size=3,fill="yellow",color="red",shape=21) +
+  geom_smooth(method="lm",se=F,limitarea=F,fullrange=T,
+              color="magenta",size=1,linetype=3)
+plot #poligono
+
+#puedes usar caract. de ggplot2
+##############################################################
+
+#geom_segment now requires z and zend mappings
+df <- data.frame(x=0.6,y=0.2,z=0.2,xend=0.2,yend=0.6,zend=0.2)
+plot <- ggtern(data=df,
+               aes(x,y,z,xend=xend,yend=yend,zend=zend)) +
+  geom_segment(size=2,arrow=arrow(),color="red")
+
+plot #flecha
+
+#no existen esas funciones que aparecian en el tutorial
+plot <- ggtern(data=data.frame(x=1,y=0,z=0),aes(x,y,z)) + geom_point()
+plot + theme_tern_gray() # DEFAULT gray  (analogous to theme_bw())
+plot + theme_tern_bw()   # B&W           (analogous to theme_gray())
+plot + theme_tern_rgbw() # Red (T) Green (L) and Blue (R), with WHITE bg
+plot + theme_tern_rgbg() # Red (T) Green (L) and Blue (R), with GRAY  bg
+
+#pero encontre estas
+plot <- ggtern(data=data.frame(x=1,y=0,z=0),aes(x,y,z)) + geom_point()
+plot + theme_nogrid()
+plot + theme_nogrid_major()
+plot + theme_nogrid_minor()
+
+plot <- ggtern(data=data.frame(x=1,y=0,z=0),aes(x,y,z)) + geom_point()
+plot + atomic_percent()        #Atomic Percent
+plot + weight_percent()        #Weight percent
+plot + custom_percent("Pcnt.") #Custom / Other
+
+########################################################################################################
+########################################################################################################
+#### 6) Plotly
+#https://plotly.com/r/ternary-contour/#basic-terary-contour-plot
+
+library(plotly)
+library(rjson)
+
+df <- fromJSON(file="https://gist.githubusercontent.com/davenquinn/988167471993bc2ece29/raw/f38d9cb3dd86e315e237fde5d65e185c39c931c2/data.json") 
+
+colors = c('#8dd3c7','#ffffb3','#bebada',
+           '#fb8072','#80b1d3','#fdb462',
+           '#b3de69','#fccde5','#d9d9d9',
+           '#bc80bd','#ccebc5','#ffed6f');
+
+fig <- plot_ly()
+
+for (i in 1:length(df)) {
+  l = c()
+  m = c()
+  n = c()
+  
+  for (j in 1:length(df[[i]])) {
+    l[[j]] <- df[[i]][[j]]$clay
+    m[[j]] <- df[[i]][[j]]$sand
+    n[[j]] <- df[[i]][[j]]$silt
+  }
+  
+  fig <- add_trace(
+    fig,
+    type = 'scatterternary',
+    a = l,
+    b = m,
+    c = n,
+    name = names(df[i]),
+    mode = 'lines',
+    line = list(
+      color='#444'
+    ),
+    fill = 'toself',
+    fillcolor = colors[i],
+    showlegend = F
+  )
+}
+
+fig <- layout(
+  fig,
+  title = "Simple Ternary Contour Plot in R",
+  ternary = list(
+    sum = 100,
+    aaxis = list(
+      title = "clay",
+      ticksuffix = "%",
+      min = 0.01,
+      linewidth = 2,
+      ticks = "outside"
+    ),
+    baxis = list(
+      title = "sand",
+      ticksuffix = "%",
+      min = 0.01,
+      linewidth = 2,
+      ticks = "outside"
+    ),
+    caxis = list(
+      title = "silt",
+      ticksuffix = "%",
+      min = 0.01,
+      linewidth = 2,
+      ticks = "outside"
+    )
+  )
+)
+
+fig
+
+########## NO SE PUEDE VER NADA :)
+
+######################################################################
+#EXAMPLE: https://plotly.com/r/ternary-plots/
+
+journalist <- c(75,70,75,5,10,10,20,10,15,10,20)
+developer <- c(25,10,20,60,80,90,70,20,5,10,10)
+designer <- c(0,20,5,35,10,0,10,70,80,80,70)
+label <- c('point 1','point 2','point 3','point 4','point 5','point 6',
+           'point 7','point 8','point 9','point 10','point 11')
+
+
+df <- data.frame(journalist,developer,designer,label)
+
+# axis layout
+axis <- function(title) {
+  list(
+    title = title,
+    titlefont = list(
+      size = 20
+    ),
+    tickfont = list(
+      size = 15
+    ),
+    tickcolor = 'rgba(0,0,0,0)',
+    ticklen = 5
+  )
+}
+
+
+fig <- df %>% plot_ly()
+fig <- fig %>% add_trace(
+  type = 'scatterternary',
+  mode = 'markers',
+  a = ~journalist,
+  b = ~developer,
+  c = ~designer,
+  text = ~label,
+  marker = list( 
+    symbol = 100,
+    color = '#DB7365',
+    size = 14,
+    line = list('width' = 2)
+  )
+)
+fig <- fig %>% layout(
+  title = "Simple Ternary Plot with Markers",
+  ternary = list(
+    sum = 100,
+    aaxis = axis('Journalist'),
+    baxis = axis('Developer'),
+    caxis = axis('Designer')
+  )
+)
+
+fig
+
+########## NO SE PUEDE VER NADA :)
+
+########################################################################################################
+########################################################################################################
+#### 7) vcd -->ternaryplot()
+#https://rdrr.io/cran/vcd/man/ternaryplot.html
+#http://strata.uga.edu/8370/rtips/ternaryPlots.html
+
+library(vcd)
+
+####EXAMPLE
+data("Arthritis")
+
+## Build table by crossing Treatment and Sex
+tab <- as.table(xtabs(~ I(Sex:Treatment) + Improved, data = Arthritis))
+
+## Mark groups
+col <- c("red", "red", "blue", "blue")
+pch <- c(1, 19, 1, 19)
+
+## plot
+ternaryplot(
+  tab,
+  col = col,
+  pch = pch,
+  prop_size = TRUE,
+  bg = "lightgray",
+  grid_color = "white",
+  labels_color = "white",
+  main = "Arthritis Treatment Data"
+)
+## legend
+grid_legend(0.8, 0.7, pch, col, rownames(tab), title = "GROUP")
+
+## Titanic
+data("Lifeboats")
+attach(Lifeboats)
+ternaryplot(
+  Lifeboats[,4:6],
+  pch = ifelse(side == "Port", 1, 19),
+  col = ifelse(side == "Port", "red", "blue"),
+  id  = ifelse(men / total > 0.1, as.character(boat), NA),
+  prop_size = 2,
+  dimnames_position = "edge",
+  main = "Lifeboats on Titanic"
+)
+grid_legend(0.8, 0.9, c(1, 19),
+            c("red", "blue"), c("Port", "Starboard"),
+            title = "SIDE")
+
+
+## Hitters
+data("Hitters")
+attach(Hitters)
+colors <- c("black","red","green","blue","red","black","blue")
+pch <- substr(levels(Positions), 1, 1)
+ternaryplot(
+  Hitters[,2:4],
+  pch = as.character(Positions),
+  col = colors[as.numeric(Positions)],
+  main = "Baseball Hitters Data"
+)
+grid_legend(0.8, 0.9, pch, colors, levels(Positions),
+            title = "POSITION(S)")
+
+######################################################
+#EXAMPLE: http://strata.uga.edu/8370/rtips/ternaryPlots.html
+
+#Setting up the data
+q <- c(100, 20, 40, 40, 0, 0, 33.3, 70)
+f <- c( 0, 40, 20, 40, 100, 0, 33.3, 15)
+l <- c( 0, 40, 40, 20, 0, 100, 33.3, 15)
+x <- cbind(q, f, l)
+
+ternaryplot(x)
+
+ternaryplot(x, scale = 1, dimnames = c("Tolerantes", "Resistentes", "Insectos"), id = NULL, 
+            dimnames_rot = c(-60, 60, 0), coordinates = TRUE, grid = TRUE, grid_color = "green", 
+            labels = c("inside", "outside", "none"), border = "red",
+            col="pink", main="Carla plot")
+
+#no se porque  dimnames_position ,dimnames_color y dimnames_rot parecen no funcionar
+
+#this is the complete function
+ternaryplot(x, scale = 1, dimnames = NULL,
+            dimnames_position = c("corner","edge","none"),
+            dimnames_color = "black", dimnames_rot = c(-60, 60, 0),
+            id = NULL, id_color = "black",
+            id_just = c("center", "center"),
+            coordinates = FALSE, grid = TRUE, grid_color = "gray",
+            labels = c("inside", "outside", "none"),
+            labels_color = "darkgray", labels_rot = c(120, -120, 0),
+            border = "black", bg = "white",
+            pch = 19, cex = 1, prop_size = FALSE, col = "red",
+            main = "ternary plot", newpage = TRUE, pop = TRUE,
+            return_grob = FALSE)
+
+
+
+#################
+#ver 1 grafica
+par(mfrow=c(1,1))
+
+#################################################################################################################################################################################
+#################################################################################################################################################################################
+
+#PROBANDO TRIPLOTS T, R y I
+
+#### 4) Plot usando Ternary
+
+library(Ternary)
+
+TernaryPlot(alab="Tolerantes", blab="Resistentes", clab="Insectos",
+            lab.col=c('red', 'darkgreen', 'blue'),
+            lab.cex=1, grid.minor.lines=0,
+            grid.lty='solid', col=rgb(0.9, 0.9, 0.9), grid.col='white', 
+            axis.col=rgb(0.6, 0.6, 0.6), ticks.col=rgb(0.6, 0.6, 0.6),
+            padding=0.08)
+
+data_points <- list(
+  "(0,R,0)" = c(0, 100, 0), 
+  "(0,0,T)" = c(0, 0, 100),
+  "(I,0,T)" = c(75, 0, 100),
+  "(I,R,T)" = c(55, 35, 65),
+  "(I,R,0)" = c(85, 40, 0),
+  "(0,R,T)" = c(0, 65, 35)
+)
+AddToTernary(points, data_points, pch=21, cex=2, 
+             bg=vapply(data_points, 
+                       function (x) rgb(x[1], x[2], x[3], 128, maxColorValue=255),
+                       character(1))
+)
+
+AddToTernary(text, data_points, names(data_points), cex=0.8, font=2)
+
+#################################################################################################################################################################################
+
+#PUNTOS DE EQUILIBRIO (flechas)
+
+library(baryplot)
+#https://github.com/rmcelreath/baryplot
+
+bary.init()
+bary.labels("Tolerantes","Resistentes","Insectos")
+bary.plotsim(1/3,1/3,arrow=TRUE)
+bary.plotsim(1/3,1/2,arrow=TRUE) #grafica con dos flechas
+
+###########
+bary.init()
+bary.labels("Tolerantes","Resistentes","Insectos")
+
+##
+function (p, q, r, v = 2, c = 3, w0 = 5)
+{
+  w1 <- (p + q) * (v - c)/2 + r * v + w0
+  w2 <- p * (v - c)/2 + (1 - p) * v/2 + w0
+  w3 <- (1 - p) * v/2 + w0
+  c(w1, w2, w3)
+}
+
+bary.game.mygame <- function(p, q, r, w0 = 10) {
+  w1 <- p * 0 + q * 1 + r * (-1) + w0
+  w2 <- p * (-1) + q * 0 + r * 1 + w0
+  w3 <- p * 1 + q * (-1) + r * 0 + w0
+  c(w1,w2,w3)
+}
+
+bary.plotsim(1/2,1/3,arrow=TRUE,thegame=bary.game.mygame) #grafica con muchas flechas
+
+##################################################### AÑADIR COLORES
+#https://github.com/rmcelreath/baryplot/find/master
+
+"bary.contour" <-
+  function( strat=1, thegame=bary.game.hdr, ... ) {
+    ## plots regions of increase, decrease, and stasis of strat
+    ## red = decrease, green = increase, white = no change
+    for( i in seq(0,1,by=0.025) ) {
+      for( j in seq(0,1,by=0.025) ) {
+        p <- i;
+        q <- j;
+        if( p+q > 1 ) next;
+        deltaxy <- bary.sim( p , q , thegame=thegame , ... );
+        origin <- c( p , q );
+        delta <- deltaxy[strat];
+        if( delta < 0 ) bary.point( origin , bg="red" , col="red" );
+        if( delta > 0 ) bary.point( origin , bg="green" , col="green" );
+        if( delta == 0 ) bary.point( origin , bg="white" , col="transparent" );
+      }
+    }
+    0;
+  }
+
+bary.contour(strat=1, thegame=bary.game.mygame) #Grafica con colores
+#rojo cuando d<0, verde cuando d>0 y blanco cuando d==0

@@ -1,4 +1,38 @@
-#Grfica 1: puntos iguales
+#########################################################################################################
+#                                                TRIPLOTS
+#########################################################################################################
+
+#Triplot 1: Las coordenadas se enciman a los puntos
+
+library(Ternary)
+
+TernaryPlot(alab="Tolerant", blab="Resistant", clab="Insects",
+            lab.col=c('orange', 'purple', 'blue'),
+            lab.cex=1, grid.minor.lines=0,
+            grid.lty='solid', col=rgb(0.9, 0.9, 0.9), grid.col='white', 
+            axis.col=rgb(0.6, 0.6, 0.6), ticks.col=rgb(0.6, 0.6, 0.6),
+            padding=0.08)
+
+data_points <- list(
+  "(0,R,0)" = c(0, 100, 0), 
+  "(0,0,T)" = c(0, 0, 100),
+  "(I,0,T)" = c(75, 0, 100),
+  "(I,R,T)" = c(55, 35, 65),
+  "(I,R,0)" = c(85, 40, 0),
+  "(0,R,T)" = c(0, 65, 35)
+)
+AddToTernary(points, data_points, pch=21, cex=1, 
+             bg=vapply(data_points, 
+                       function (x) rgb(x[1], x[2], x[3], 128, maxColorValue=255),
+                       character(1))
+)
+
+AddToTernary(text, data_points, names(data_points), cex=0.8, font=2)
+
+
+
+########################################################################################################
+#Triplot 2: Las coordenadas no se enciman a los puntos
 
 TernaryPlot(alab="Tolerant", blab="Resistant", clab="Insect",
             lab.col=c('orange', 'purple', 'blue'),
@@ -30,9 +64,8 @@ data_p <- list(
 
 AddToTernary(text, data_p, names(data_p), cex=0.8, font=1) #tipo de fuente, 2 es negritas
 
-
 #########################################################################################################
-#Grafica 2: distintas figuras como puntos
+#Triplot 3: Las coordenadas no se enciman a los puntos (distintas formas)
 
 TernaryPlot(alab="Tolerant", blab="Resistant", clab="Insect",
             lab.col=c('orange', 'purple', 'blue'),
@@ -64,9 +97,9 @@ data_p <- list(
 
 AddToTernary(text, data_p, names(data_p), cex=0.8, font=1) #tipo de fuente, 2 es negritas
 
-
 #########################################################################################################
-#Grafica 3: distintas figuras como puntos y leyenda
+#Triplot 4: Las coordenadas estan como leyenda
+
 par(mfrow=c(1, 1), mar=rep(0.3, 4))
 TernaryPlot(alab="Resistant", blab="Tolerant", clab="Insect",
             lab.col=c('orange', 'purple', 'blue'),
@@ -90,4 +123,4 @@ legend('bottomright',
        legend=c('(0,R,0)', '(0,0,T)', '(I,0,T)', '(I,R,T)', '(I,R,0)', '(0,R,T)'),
        cex=0.8, bty='n', pch = c(19,20,21,22,23,18), pt.cex=1.8)
 
-#########################################################################################################
+

@@ -664,4 +664,4 @@ bary.plotsim(1/2,1/3,arrow=TRUE,thegame=bary.game.mygame) #grafica con muchas fl
   }
 
 bary.contour(strat=1, thegame=bary.game.mygame) #Grafica con colores
-#rojo cuando d<0, verde cuando d>0 y blanco cuando d==0
+#rojo cuando d<0, verde cuando d>0 y blanco cuando  cuando  d=0
